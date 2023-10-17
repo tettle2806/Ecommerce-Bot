@@ -7,11 +7,11 @@ load_dotenv()
 BOT_TOKEN = str(os.getenv("BOT_TOKEN"))
 
 admin_id = [
-    660515831
+    1931305876
 ]
 
 cashier = [
-    5488702955
+    627725876
 ]
 
 
