@@ -198,7 +198,7 @@ async def reaction_on_crt_reply(message: Message):
     text = '''В корзине:\n\n'''
     for cart_product in cart_products:
         text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -239,7 +239,7 @@ async def card_payment(message: Message):
     phone = db.get_user_by_id(telegram_id=message.from_user.id)[2]
     text = f'Номер заказа №{cart_id}\n' \
            f'Телефон номер: {phone}\n'
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -337,6 +337,7 @@ async def cash_payment(message: Message):
             f'Вид доставки: {order} - {order_cost}\n' \
             f'Итого: {total_price_all}\n\n' \
             f'Оплата: Наличными'
+
     await bot.delete_message(chat_id=chat_id, message_id=message.message_id)
     await bot.send_message(chat_id=admin_id[0], text=text, reply_markup=accept_or_cancel(chat_id))
     await bot.send_message(chat_id=cashier[0], text=text, reply_markup=accept_or_cancel(chat_id))
