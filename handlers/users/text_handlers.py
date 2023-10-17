@@ -219,7 +219,7 @@ async def reaction_on_crt_reply(message: Message):
 @dp.message_handler(regexp='💳 Картой')
 async def card_payment(message: Message):
     await message.answer(f'Оплатите заказ переводом\n'
-                         f'8600 0000 0000 0000\n'
+                         f'8600570473099074\n'
                          f'Отправьте скриншот чека',
                          )
 
