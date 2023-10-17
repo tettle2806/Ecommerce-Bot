@@ -149,6 +149,7 @@ async def payment(call: CallbackQuery):
         text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
     text += f'Товары: {total_price}\n' \
             f'Вид доставки: {order} - {order_cost}\n' \
+            f'<b>Доставка больше 3 километров оплачивается за километр 1000 сум</b>\n' \
             f'Итого: {total_price_all}'
     await bot.send_message(chat_id=chat_id, text=text, reply_markup=type_of_pay())
 
