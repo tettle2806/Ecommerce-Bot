@@ -365,3 +365,35 @@ class DataBase:
         '''
 
         self.manager(sql, commit=True)
+
+    def create_status_bot(self):
+        sql = '''
+            CREATE TABLE IF NOT EXISTS on_off(
+            telegram_id BIGINT PRIMARY KEY,
+            status VARCHAR(10) 
+            )
+        '''
+        self.manager(sql, commit=True)
+
+    def insert_status(self, status):
+        sql = '''
+            INSERT INTO on_off(telegram_id, status) VALUES
+            ((660515831), (?))
+        '''
+        self.manager(sql, status, commit=True)
+
+    def update_status(self, status):
+        sql = '''
+        UPDATE on_off
+        SET
+        status = ?
+        WHERE telegram_id = 660515831
+        '''
+        self.manager(sql, status, commit=True)
+
+    def select_status_bot(self):
+        sql = '''
+            SELECT status FROM on_off WHERE telegram_id = 660515831
+        '''
+
+        return self.manager(sql, fetchone=True)

@@ -18,7 +18,12 @@ from states.card_state import CardState
 
 @dp.message_handler(regexp='🛍 Заказать')
 async def reaction_order(message: Message):
-    await message.answer('Выберите вид заказа', reply_markup=generate_type_of_order())
+    status = int(db.select_status_bot()[0])
+    print(status)
+    if status == 0:
+        await message.answer('Доставка временно не работает, приносим извинения')
+    else:
+        await message.answer('Выберите вид заказа', reply_markup=generate_type_of_order())
 
 
 @dp.message_handler(regexp='🚖 Доставка')
@@ -88,7 +93,7 @@ async def back_to_cart(message: Message):
     text = '''В корзине:\n\n'''
     for cart_product in cart_products:
         text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -255,8 +260,8 @@ async def card_payment(message: Message):
             f'Оплата: Картой\n' \
             f'Статус: Не оплачено'
 
-    await bot.send_message(chat_id=admin_id[0], text=text, reply_markup=accept_or_cancel(chat_id))
-    await bot.send_message(chat_id=cashier[0], text=text, reply_markup=accept_or_cancel(chat_id))
+    await bot.send_message(chat_id=-1001977700512, text=text, reply_markup=accept_or_cancel(chat_id))
+    # await bot.send_message(chat_id=cashier[0], text=text, reply_markup=accept_or_cancel(chat_id))
     await CardState.payment.set()
 
 
@@ -281,7 +286,7 @@ async def photo_card(message: Message, state=FSMContext):
     phone = db.get_user_by_id(telegram_id=message.from_user.id)[2]
     text = f'''Номер заказа №{cart_id}\n
 Телефон номер: {phone}\n'''
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -298,8 +303,7 @@ async def photo_card(message: Message, state=FSMContext):
             f'Статус: Оплачено'
     await state.finish()
     await bot.send_message(chat_id=chat_id, text='Ожидайте ответа администратора', reply_markup=main_menu())
-    await bot.send_photo(chat_id=admin_id[0], photo=file_name, caption=text)
-    await bot.send_photo(chat_id=cashier[0], photo=file_name, caption=text)
+    await bot.send_photo(chat_id=-1001977700512, photo=file_name, caption=text)
 
 
 @dp.message_handler(regexp='💸 Наличными')
@@ -323,7 +327,7 @@ async def cash_payment(message: Message):
     phone = db.get_user_by_id(telegram_id=message.from_user.id)[2]
     text = f'''Номер заказа №{cart_id}\n
     Телефон номер: {phone}\n'''
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -339,5 +343,5 @@ async def cash_payment(message: Message):
             f'Оплата: Наличными'
 
     await bot.delete_message(chat_id=chat_id, message_id=message.message_id)
-    await bot.send_message(chat_id=admin_id[0], text=text, reply_markup=accept_or_cancel(chat_id))
-    await bot.send_message(chat_id=cashier[0], text=text, reply_markup=accept_or_cancel(chat_id))
+    await bot.send_message(chat_id=-1001977700512, text=text, reply_markup=accept_or_cancel(chat_id))
+

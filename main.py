@@ -3,7 +3,6 @@ from utils.set_bot_commands import set_default_commands
 import middlewares
 
 
-
 async def on_startup(dp):
     middlewares.setup(dp)
     await on_startup_notify(dp)

@@ -81,15 +81,11 @@ async def show_cart(call: CallbackQuery):
     except:
         total_price, total_quantity = 0, 0
     cart_products = db.get_cart_products_by_cart_id(cart_id)
-    print(cart_products)
     text = '''В корзине:\n\n'''
-    print(total_price, total_quantity, cart_products)
     for cart_product in cart_products:
         text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
-        print(cart_product)
 
     type_of_order = db.select_location(telegram_id=chat_id)[0]
-    print(type_of_order)
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -113,47 +109,51 @@ async def show_main_menu(call: CallbackQuery):
     db.delete_cart_products(call.data.split('_')[1])
     await bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
     await bot.send_message(chat_id=call.message.chat.id, text='Выберите категорию',
-                           reply_markup=generate_menu_categories())
+                           reply_markup=main_menu())
 
 
 @dp.callback_query_handler(lambda call: 'order' in call.data)
 async def payment(call: CallbackQuery):
-    await bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
-    chat_id = call.message.chat.id
-    if db.get_cart_id(chat_id):
-        cart_id = db.get_cart_id(chat_id)[0]
+    status = int(db.select_status_bot()[0])
+    print(status)
+    if status == 0:
+        await bot.send_message(chat_id=call.from_user.id, text='Доставка временно не работает, приносим извинения')
     else:
-        db.create_cart_for_user(chat_id)
-        cart_id = db.get_cart_id(chat_id)[0]
-    # Обновить общее количество и общую сумму
-    # вытащить их потом вытащить все товары в корзине
-    # сформировать сообщение и отправить пользователю
-    db.update_cart_total_price_quantity(cart_id)
-    total_price, total_quantity = db.get_cart_total_price_quantity(cart_id)
-    try:
-        total_price, total_quantity = int(total_price), int(total_quantity)
-    except:
-        total_price, total_quantity = 0, 0
-    cart_products = db.get_cart_products_by_cart_id(cart_id)
-    phone = db.get_user_by_id(telegram_id=call.from_user.id)[2]
-    text = f'''Номер заказа №{cart_id}\n
-Телефон номер: {phone}\n'''
-    type_of_order = db.select_location(telegram_id=chat_id)[0]
-    if type_of_order == 'pick_up':
-        order = 'Самовывоз'
-        order_cost = 0
-    else:
-        order_cost = 15000
-        order = 'Доставка'
-    total_price_all = order_cost + total_price
-    for cart_product in cart_products:
-        text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
-    text += f'Товары: {total_price}\n' \
-            f'Вид доставки: {order} - {order_cost}\n' \
-            f'<b>Доставка больше 3 километров оплачивается за километр 1000 сум</b>\n' \
-            f'Итого: {total_price_all}'
-    print(order)
-    await bot.send_message(chat_id=chat_id, text=text, reply_markup=type_of_pay())
+        await bot.delete_message(chat_id=call.from_user.id, message_id=call.message.message_id)
+        chat_id = call.message.chat.id
+        if db.get_cart_id(chat_id):
+            cart_id = db.get_cart_id(chat_id)[0]
+        else:
+            db.create_cart_for_user(chat_id)
+            cart_id = db.get_cart_id(chat_id)[0]
+        # Обновить общее количество и общую сумму
+        # вытащить их потом вытащить все товары в корзине
+        # сформировать сообщение и отправить пользователю
+        db.update_cart_total_price_quantity(cart_id)
+        total_price, total_quantity = db.get_cart_total_price_quantity(cart_id)
+        try:
+            total_price, total_quantity = int(total_price), int(total_quantity)
+        except:
+            total_price, total_quantity = 0, 0
+        cart_products = db.get_cart_products_by_cart_id(cart_id)
+        phone = db.get_user_by_id(telegram_id=call.from_user.id)[2]
+        text = f'''Номер заказа №{cart_id}\n
+    Телефон номер: {phone}\n'''
+        type_of_order = db.select_location(telegram_id=chat_id)[0]
+        if type_of_order == 'pick_up':
+            order = 'Самовывоз'
+            order_cost = 0
+        else:
+            order_cost = 15000
+            order = 'Доставка'
+        total_price_all = order_cost + total_price
+        for cart_product in cart_products:
+            text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
+        text += f'Товары: {total_price}\n' \
+                f'Вид доставки: {order} - {order_cost}\n' \
+                f'<b>Доставка больше 3 километров оплачивается за километр 1000 сум</b>\n' \
+                f'Итого: {total_price_all}'
+        await bot.send_message(chat_id=chat_id, text=text, reply_markup=type_of_pay())
 
 
 @dp.callback_query_handler(lambda call: 'clear' in call.data)
@@ -186,7 +186,7 @@ async def delete_cart(call: CallbackQuery):
     for cart_product in cart_products:
         text += f'{cart_product[4]} ✖️ {cart_product[2]}\n'
         print(cart_product)
-    type_of_order = db.select_location(telegram_id=chat_id)
+    type_of_order = db.select_location(telegram_id=chat_id)[0]
     if type_of_order == 'pick_up':
         order = 'Самовывоз'
         order_cost = 0
@@ -220,30 +220,28 @@ async def accept_order(call: CallbackQuery):
     chat_id = call.data.split('_')[1]
     cash = call.message.text + f'\n\nСтатус: Подтвержден'
     # await bot.send_message(text='Заказ подтвержден', chat_id=chat_id)
+    await bot.delete_message(chat_id=-1001977700512, message_id=call.message.message_id)
     try:
         info = db.select_location(chat_id)[0]
     except:
         info = 'None'
     if info == 'pick_up':
-        await bot.send_message(chat_id=admin_id[0], text=cash)
-        await bot.send_message(chat_id=cashier[0], text=cash)
+        await bot.send_message(chat_id=-1001977700512, text=cash)
         await bot.send_message(text=f'{cash}', chat_id=chat_id)
     elif info == 'enter':
-        location = "Адрес" + db.get_enter_location(chat_id)[0]
-        await bot.send_message(chat_id=admin_id[0], text=location)
-        await bot.send_message(chat_id=cashier[0], text=location)
+        location = "Адрес: " + db.get_enter_location(chat_id)[0]
+        await bot.send_message(chat_id=-1001977700512, text=location)
         await bot.send_message(text=f'{cash}', chat_id=chat_id)
     elif info == 'location':
         inf = db.get_address(telegram_id=chat_id)[0]
         inf1 = inf.split(':')
         latitude = float(inf1[1].split(',')[0])
         longitude = float(inf1[2].split('}')[0])
-        await bot.send_location(chat_id=admin_id[0], latitude=latitude, longitude=longitude)
-        await bot.send_location(chat_id=cashier[0], latitude=latitude, longitude=longitude)
+        await bot.send_location(chat_id=-1001977700512, latitude=latitude, longitude=longitude, )
         await bot.send_message(text=f'{cash}', chat_id=chat_id)
     else:
-        await bot.send_message(chat_id=admin_id[0], text='Данные не найдены')
-        await bot.send_message(chat_id=cashier[0], text='Данные не найдены')
+        await bot.send_message(chat_id=-1001977700512, text='Данные не найдены')
+
 
     db.delete_cart(telegram_id=chat_id)
 
@@ -252,9 +250,12 @@ async def accept_order(call: CallbackQuery):
 async def cancel_order(call: CallbackQuery):
     chat_id = call.data.split('_')[1]
     await bot.send_message(text='Заказ отменен', chat_id=chat_id)
+    info = call.message.text
     db.delete_cart(telegram_id=chat_id)
+    full_info = info + f'Статус: Отменен'
+    await bot.send_message(chat_id=-1001977700512, text=full_info)
     message_id = call.message.message_id
-    await bot.delete_message(chat_id=chat_id, message_id=message_id)
+    await bot.delete_message(chat_id=-1001977700512, message_id=message_id)
 
 
 @dp.callback_query_handler(lambda call: 'location_' in call.data)
@@ -269,15 +270,13 @@ async def send_location_to_admin(call: CallbackQuery):
         await bot.send_message(chat_id=cashier[0], text='Самовывоз, локации нет')
     elif info == 'enter':
         location = 'Адрес: ' + db.get_enter_location(chat_id)[0]
-        await bot.send_message(chat_id=admin_id[0], text=location)
-        await bot.send_message(chat_id=cashier[0], text=location)
+        await bot.send_message(chat_id=-1001977700512, text=location)
     elif info == 'location':
         inf = db.get_address(telegram_id=chat_id)[0]
         inf1 = inf.split(':')
         latitude = float(inf1[1].split(',')[0])
         longitude = float(inf1[2].split('}')[0])
-        await bot.send_location(chat_id=admin_id[0], latitude=latitude, longitude=longitude)
-        await bot.send_location(chat_id=cashier[0], latitude=latitude, longitude=longitude)
+        await bot.send_location(chat_id=-1001977700512, latitude=latitude, longitude=longitude)
     else:
-        await bot.send_message(chat_id=admin_id[0], text='Данные не найдены')
-        await bot.send_message(chat_id=cashier[0], text='Данные не найдены')
+        await bot.send_message(chat_id=-1001977700512, text='Данные не найдены')
+
