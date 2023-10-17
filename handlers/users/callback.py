@@ -220,8 +220,6 @@ async def accept_order(call: CallbackQuery):
     chat_id = call.data.split('_')[1]
     cash = call.message.text + f'\n\nСтатус: Подтвержден'
     # await bot.send_message(text='Заказ подтвержден', chat_id=chat_id)
-    message_id = call.message.message_id
-    await bot.delete_message(chat_id=admin_id[0], message_id=message_id)
     try:
         info = db.select_location(chat_id)[0]
     except:
